@@ -305,8 +305,11 @@ public final class ImageMarker: NSObject, RCTBridgeModule {
             let ww = markerImg.size.width
             let wh = markerImg.size.height
             
-            let diagonal = sqrt(pow(ww, 2) + pow(ww, 2)) // 计算对角线长度
-            let size = CGSize(width: CGFloat(diagonal), height: CGFloat(diagonal))
+            let radians = watermarkOptions.imageOption.rotate * .pi / 180
+            let newWidth = ww * abs(cos(radians)) + wh * abs(sin(radians))
+            let newHeight = ww * abs(sin(radians)) + wh * abs(cos(radians))
+            //let diagonal = sqrt(pow(ww, 2) + pow(wh, 2)) // 计算对角线长度
+            let size = CGSize(width: CGFloat(newWidth), height: CGFloat(newHeight))
             var rect: CGRect
             if watermarkOptions.position != .none {
                 switch watermarkOptions.position {
@@ -328,10 +331,10 @@ public final class ImageMarker: NSObject, RCTBridgeModule {
                         rect = CGRect(origin: CGPoint(x: 20, y: 20), size: size)
                     }
             } else {
-                rect = CGRect(x: Utils.parseSpreadValue(v: watermarkOptions.X, relativeTo: w) ?? 20, y: Utils.parseSpreadValue(v: watermarkOptions.Y, relativeTo: h) ?? 20, width: CGFloat(ww), height: CGFloat(wh))
+                rect = CGRect(x: Utils.parseSpreadValue(v: watermarkOptions.X, relativeTo: w) ?? 20, y: Utils.parseSpreadValue(v: watermarkOptions.Y, relativeTo: h) ?? 20, width: CGFloat(newWidth), height: CGFloat(newHeight))
             }
             
-            UIGraphicsBeginImageContextWithOptions(CGSize(width: diagonal, height: diagonal), false, watermarkOptions.imageOption.scale)
+            UIGraphicsBeginImageContextWithOptions(CGSize(width: newWidth, height: newHeight), false, 0.0)
             let markerContext = UIGraphicsGetCurrentContext()
             markerContext?.saveGState()
 
@@ -340,12 +343,13 @@ public final class ImageMarker: NSObject, RCTBridgeModule {
                 markerContext?.setAlpha(watermarkOptions.imageOption.alpha)
                 markerContext?.setBlendMode(.multiply)
                 let markerImage = markerImg.rotatedImageWithTransform(watermarkOptions.imageOption.rotate)
-                markerContext?.draw(markerImage.cgImage!, in: CGRect(origin: .zero, size: CGSize(width: diagonal, height: diagonal)))
+                markerContext?.draw(markerImage.cgImage!, in: CGRect(origin: .zero, size: CGSize(width: newWidth, height: newHeight)))
                 markerContext?.endTransparencyLayer()
 
             } else {
                 let markerImage = markerImg.rotatedImageWithTransform(watermarkOptions.imageOption.rotate)
-                markerContext?.draw(markerImage.cgImage!, in: CGRect(origin: .zero, size: CGSize(width: diagonal, height: diagonal)))
+                markerContext?.draw(markerImage.cgImage!, in: CGRect(origin: .zero, size: CGSize(width: newWidth, height: newHeight)))
+                //rect.size = CGSize(width: diagonal, height: diagonal)
             }
             markerContext?.restoreGState()
 
